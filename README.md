@@ -12,15 +12,15 @@ backend.
 > All telemetry comes from `libamdgpu_top` (the same library that powers
 > `amdgpu_top`'s `--tui`, `--gui`, and `--json` frontends). Think of this as a
 > fourth, alternate TUI frontend — hence `tui2` — focused on the nvitop/btop
-> aesthetic. Huge credit to [@Umio-Yasuno](https://github.com/Umio-Yasuno) for
+> aesthetic. Thanks [@Umio-Yasuno](https://github.com/Umio-Yasuno) for
 > the backend that does all the hard work.
 
 ## Why
 
 `nvitop` is great but NVIDIA-only. On AMD — especially a Strix Halo box with an
-APU **and** an XDNA NPU, or a workstation with multiple cards (e.g. 7900 XTX +
-W7900) — there was no single TUI with that look-and-feel. This fills that gap by
-rendering `libamdgpu_top`'s data in a modern, themeable layout.
+APU **and** an XDNA NPU, or a workstation with multiple AMD cards there was no 
+single TUI with that look-and-feel. This fills that gap by rendering 
+`libamdgpu_top`'s data in a modern, themeable layout.
 
 ## Features
 
@@ -38,8 +38,6 @@ rendering `libamdgpu_top`'s data in a modern, themeable layout.
   graphs with theme-gradient fills
 
 ## Install
-
-### 1. From source (works today)
 
 Requires a **Rust toolchain** and **`libdrm` development headers**, plus an AMD
 GPU/APU running the `amdgpu` kernel driver.
