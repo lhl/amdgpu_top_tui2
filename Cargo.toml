@@ -1,0 +1,24 @@
+[package]
+name = "amdgpu_top_nvitop"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "nvitop-style TUI frontend for amdgpu_top (AMDGPU + Strix Halo XDNA NPU)"
+# TODO: confirm repo URL / ownership
+repository = "https://github.com/lhl/amdgpu_top_nvitop"
+authors = ["LHL"]
+
+[[bin]]
+name = "amdgpu-top-nvitop"
+path = "src/main.rs"
+
+[dependencies]
+# libamdgpu_top is not on crates.io; depend on the upstream git workspace subcrate.
+# Default features enable `libdrm_link` (requires libdrm dev headers at build time).
+libamdgpu_top = { git = "https://github.com/Umio-Yasuno/amdgpu_top" }
+ratatui = "0.29"
+crossterm = "0.28"
+
+# Local-dev override: if you need to poke at libamdgpu_top's public API, drop a
+# checked-out copy at ../reference/amdgpu_top and swap the line above for:
+#   libamdgpu_top = { path = "../reference/amdgpu_top/crates/libamdgpu_top" }
