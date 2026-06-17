@@ -66,6 +66,8 @@ fn run(
                     KeyCode::Char(' ') | KeyCode::Enter => app.toggle_collapse(),
                     KeyCode::Char('t') => app.cycle_theme(true),
                     KeyCode::Char('T') => app.cycle_theme(false),
+                    KeyCode::Char('b') => app.cycle_block(true),
+                    KeyCode::Char('B') => app.cycle_block(false),
                     _ => {}
                 }
             }

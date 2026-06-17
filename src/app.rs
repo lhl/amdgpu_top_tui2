@@ -46,6 +46,7 @@ pub struct App {
     pub theme: Theme,
     pub theme_name: String,
     pub themes: Vec<String>,
+    pub block_style: usize,
     pub cpu_model: String,
 }
 
@@ -60,12 +61,21 @@ impl App {
         let n = apps.len();
         let has_npu = apps.iter().any(|a| a.xdna_device_path.is_some());
 
+        let collapse = CollapseState::load();
+        let theme_name = if collapse.theme.is_empty() {
+            DEFAULT_THEME.to_string()
+        } else {
+            collapse.theme.clone()
+        };
+        let theme = Theme::load(&theme_name);
+        let block_style = collapse.block_style as usize % crate::gauge::BLOCK_STYLES.len();
+
         Ok(Self {
             apps,
             suspended,
             cpu: CpuSampler::default(),
             mem: SystemMem::default(),
-            collapse: CollapseState::load(),
+            collapse,
             section: Section::Gpu,
             hist_cpu: History::new(80),
             hist_gpu: (0..n).map(|_| History::new(80)).collect(),
@@ -73,9 +83,10 @@ impl App {
             hist_npu: History::new(80),
             hist_cores: Vec::new(),
             has_npu,
-            theme: Theme::default_theme(),
-            theme_name: DEFAULT_THEME.to_string(),
+            theme,
+            theme_name,
             themes: Theme::list_available(),
+            block_style,
             cpu_model: cpu_model(),
         })
     }
@@ -97,6 +108,23 @@ impl App {
         };
         self.theme_name = self.themes[next].clone();
         self.theme = Theme::load(&self.theme_name);
+        self.collapse.theme = self.theme_name.clone();
+        self.save_state();
+    }
+
+    pub fn cycle_block(&mut self, forward: bool) {
+        let len = crate::gauge::BLOCK_STYLES.len();
+        self.block_style = if forward {
+            (self.block_style + 1) % len
+        } else {
+            (self.block_style + len - 1) % len
+        };
+        self.collapse.block_style = self.block_style as u8;
+        self.save_state();
+    }
+
+    pub fn block_style_name(&self) -> &'static str {
+        crate::gauge::block_style(self.block_style).name
     }
 
     pub fn sample(&mut self) {

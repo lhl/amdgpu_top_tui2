@@ -1,5 +1,5 @@
 //! Persisted UI state (section collapse flags). Stored as JSON under
-//! ~/.config/amdgpu-top-nvitop/state.json.
+//! ~/.config/amdgpu-top-tui2/state.json.
 
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -11,11 +11,18 @@ pub struct CollapseState {
     pub gpu: bool,
     pub npu: bool,
     pub processes: bool,
+    /// Persisted theme name (empty => use default). #[serde(default)] keeps old
+    /// state files loadable.
+    #[serde(default)]
+    pub theme: String,
+    /// Persisted gauge block-style index.
+    #[serde(default)]
+    pub block_style: u8,
 }
 
 fn state_path() -> Option<PathBuf> {
     let home = std::env::var("HOME").ok()?;
-    Some(PathBuf::from(home).join(".config/amdgpu-top-nvitop/state.json"))
+    Some(PathBuf::from(home).join(".config/amdgpu-top-tui2/state.json"))
 }
 
 impl CollapseState {

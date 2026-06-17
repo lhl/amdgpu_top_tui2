@@ -97,7 +97,29 @@ fn section_block(app: &App, s: Section, title: &str, box_kind: SectionBox) -> Bl
 }
 
 fn gauge_line(app: &App, label: &str, pct: Option<f64>, width: usize, kind: Kind) -> Line<'static> {
-    gauge::line(label, pct, width, kind, &app.theme)
+    gauge::line(label, pct, width, kind, &app.theme, gauge::block_style(app.block_style))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn gbar(
+    app: &App,
+    label: &str,
+    pct: Option<f64>,
+    value: &str,
+    width: usize,
+    value_field: usize,
+    kind: Kind,
+) -> Line<'static> {
+    gauge::bar(
+        label,
+        pct,
+        value,
+        width,
+        value_field,
+        kind,
+        &app.theme,
+        gauge::block_style(app.block_style),
+    )
 }
 
 fn bus_id(app: &libamdgpu_top::app::AppAmdgpuTop) -> String {
@@ -110,7 +132,7 @@ fn draw_header(f: &mut Frame, area: Rect, app: &App) {
     let now = clock_string();
     let line = Line::from(vec![
         Span::styled(
-            " amdgpu-top-nvitop ",
+            " amdgpu-top-tui2 ",
             Style::default().fg(app.theme.hi_fg()).add_modifier(Modifier::BOLD),
         ),
         Span::styled(
@@ -201,7 +223,7 @@ fn draw_cpu(f: &mut Frame, area: Rect, app: &mut App) {
 
     // CPU aggregate bar (reserve same value field as MEM/SWP so tracks align)
     f.render_widget(
-        Paragraph::new(gauge::bar("CPU", Some(app.cpu.cpu_percent), "", w, CPU_VAL_W, Kind::Gpu, &app.theme)),
+        Paragraph::new(gbar(app, "CPU", Some(app.cpu.cpu_percent), "", w, CPU_VAL_W, Kind::Gpu)),
         rl[0],
     );
 
@@ -240,12 +262,12 @@ fn draw_cpu(f: &mut Frame, area: Rect, app: &mut App) {
     // MEM + SWP bars with absolute numbers (fixed value field => aligned tracks)
     let mem_val = format!("{} / {}", fmt_gb(app.mem.mem_used_gb()), fmt_gb(app.mem.mem_total_gb()));
     f.render_widget(
-        Paragraph::new(gauge::bar("MEM", Some(app.mem.mem_used_pct()), &mem_val, w, CPU_VAL_W, Kind::Mem, &app.theme)),
+        Paragraph::new(gbar(app, "MEM", Some(app.mem.mem_used_pct()), &mem_val, w, CPU_VAL_W, Kind::Mem)),
         rl[2],
     );
     let swp_val = format!("{} / {}", fmt_gb(app.mem.swap_used_gb()), fmt_gb(app.mem.swap_total_gb()));
     f.render_widget(
-        Paragraph::new(gauge::bar("SWP", Some(app.mem.swap_used_pct()), &swp_val, w, CPU_VAL_W, Kind::Mem, &app.theme)),
+        Paragraph::new(gbar(app, "SWP", Some(app.mem.swap_used_pct()), &swp_val, w, CPU_VAL_W, Kind::Mem)),
         rl[3],
     );
 
@@ -426,12 +448,12 @@ fn draw_gpu(f: &mut Frame, area: Rect, app: &mut App) {
         let rw = cols[1].width as usize;
 
         f.render_widget(
-            Paragraph::new(gauge::bar("GPU", Some(gfx), "", rw, GPU_VAL_W, Kind::Gpu, &app.theme)),
+            Paragraph::new(gbar(app, "GPU", Some(gfx), "", rw, GPU_VAL_W, Kind::Gpu)),
             right[0],
         );
         let mem_val = format!("{} / {}", fmt_bytes(mi.used_bytes), fmt_bytes(mi.total_bytes));
         f.render_widget(
-            Paragraph::new(gauge::bar(&mem_label, Some(mem_pct), &mem_val, rw, GPU_VAL_W, Kind::Mem, &app.theme)),
+            Paragraph::new(gbar(app, &mem_label, Some(mem_pct), &mem_val, rw, GPU_VAL_W, Kind::Mem)),
             right[1],
         );
 
@@ -665,7 +687,13 @@ fn draw_footer(f: &mut Frame, area: Rect, app: &App) {
         Span::styled("t/T ", key),
         Span::styled("theme ", lbl),
         Span::styled(
-            format!(" {} ", app.theme_name),
+            format!("{} ", app.theme_name),
+            Style::default().fg(app.theme.selected_fg()).add_modifier(Modifier::BOLD).bg(bg),
+        ),
+        Span::styled(" b ", key),
+        Span::styled("blocks ", lbl),
+        Span::styled(
+            format!("{} ", app.block_style_name()),
             Style::default().fg(app.theme.selected_fg()).add_modifier(Modifier::BOLD).bg(bg),
         ),
     ];

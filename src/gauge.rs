@@ -10,7 +10,39 @@ use ratatui::text::{Line, Span};
 
 use crate::theme::{Theme, UtilKind};
 
-const PARTIAL: [&str; 9] = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"];
+const SMOOTH_RAMP: [&str; 9] = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"];
+
+/// A user-cycleable gauge fill style. `full` is the glyph for a complete cell,
+/// `empty` for the unfilled track. `ramp` Some(..) renders precise fractional
+/// sub-cells (the leading edge); None rounds to the nearest whole cell.
+pub struct BlockStyle {
+    pub name: &'static str,
+    pub full: &'static str,
+    pub empty: &'static str,
+    pub ramp: Option<[&'static str; 9]>,
+}
+
+pub const BLOCK_STYLES: &[BlockStyle] = &[
+    BlockStyle { name: "smooth", full: "█", empty: "░", ramp: Some(SMOOTH_RAMP) },
+    BlockStyle { name: "full", full: "█", empty: "░", ramp: None },
+    BlockStyle { name: "7/8", full: "▉", empty: "░", ramp: None },
+    BlockStyle { name: "3/4", full: "▊", empty: "░", ramp: None },
+    BlockStyle { name: "5/8", full: "▋", empty: "░", ramp: None },
+    BlockStyle { name: "1/2", full: "▌", empty: "░", ramp: None },
+    BlockStyle { name: "3/8", full: "▍", empty: "░", ramp: None },
+    BlockStyle { name: "1/4", full: "▎", empty: "░", ramp: None },
+    BlockStyle { name: "1/8", full: "▏", empty: "░", ramp: None },
+    BlockStyle { name: "dark", full: "▓", empty: "░", ramp: None },
+    BlockStyle { name: "medium", full: "▒", empty: "░", ramp: None },
+    BlockStyle { name: "dots", full: "●", empty: "·", ramp: None },
+    BlockStyle { name: "lines", full: "━", empty: "─", ramp: None },
+    BlockStyle { name: "squares", full: "■", empty: "□", ramp: None },
+    BlockStyle { name: "pills", full: "▰", empty: "▱", ramp: None },
+];
+
+pub fn block_style(i: usize) -> &'static BlockStyle {
+    &BLOCK_STYLES[i % BLOCK_STYLES.len()]
+}
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Kind {
@@ -41,6 +73,7 @@ pub fn bar(
     value_field: usize,
     kind: Kind,
     theme: &Theme,
+    style: &BlockStyle,
 ) -> Line<'static> {
     let label_part = format!("{label} ");
     let pct_str = match pct {
@@ -65,16 +98,26 @@ pub fn bar(
         Some(p) => {
             let clamped = (p / 100.0).clamp(0.0, 1.0);
             let n = (track as f64 * clamped * 8.0).round() as usize;
-            let (q, r) = (n / 8, n % 8);
-            let filled = "█".repeat(q);
-            let partial = if r > 0 { PARTIAL[r].to_string() } else { String::new() };
+            let (mut q, r) = (n / 8, n % 8);
+            let partial = match style.ramp {
+                Some(ramp) if r > 0 => ramp[r].to_string(),
+                Some(_) => String::new(),
+                None => {
+                    if r >= 4 {
+                        q += 1; // round to nearest whole cell
+                    }
+                    String::new()
+                }
+            };
+            let q = q.min(track);
+            let filled = style.full.repeat(q);
             let used = q + partial.chars().count();
-            let empty = "░".repeat(track.saturating_sub(used));
+            let empty = style.empty.repeat(track.saturating_sub(used));
             spans.push(Span::styled(format!("{filled}{partial}"), Style::default().fg(fill_color)));
             spans.push(Span::styled(empty, Style::default().fg(theme.inactive_fg())));
         }
         None => spans.push(Span::styled(
-            "░".repeat(track),
+            style.empty.repeat(track),
             Style::default().fg(theme.inactive_fg()),
         )),
     }
@@ -90,8 +133,15 @@ pub fn bar(
 }
 
 /// Convenience: a gauge whose only annotation is its percentage.
-pub fn line(label: &str, pct: Option<f64>, width: usize, kind: Kind, theme: &Theme) -> Line<'static> {
-    bar(label, pct, "", width, 0, kind, theme)
+pub fn line(
+    label: &str,
+    pct: Option<f64>,
+    width: usize,
+    kind: Kind,
+    theme: &Theme,
+    style: &BlockStyle,
+) -> Line<'static> {
+    bar(label, pct, "", width, 0, kind, theme, style)
 }
 
 #[allow(dead_code)]
